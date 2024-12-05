@@ -1,6 +1,6 @@
 [package]
 name = "nokhwa"
-version = "0.10.6"
+version = "0.10.7"
 authors = ["l1npengtul <l1npengtul@protonmail.com>"]
 edition = "2021"
 description = "A Simple-to-use, cross-platform Rust Webcam Capture Library"
@@ -46,7 +46,7 @@ docs-features = []
 test-fail-warning = []
 
 [dependencies]
-thiserror = "1.0"
+thiserror = "2.0"
 paste = "1.0"
 flume = "0.11"
 
