@@ -2285,6 +2285,13 @@ mod internal {
                 FrameFormat::GRAY => kCMPixelFormat_8IndexedGray_WhiteIsZero,
                 FrameFormat::NV12 => kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange,
                 FrameFormat::RAWRGB => kCMPixelFormat_24RGB,
+                FrameFormat::RAWBGR => {
+                    return Err(NokhwaError::SetPropertyError {
+                        property: "setVideoSettings".to_string(),
+                        value: "set frame format".to_string(),
+                        error: "Unsupported frame format BGR".to_string(),
+                    });
+                }
             };
             let obj = CFNumber::from(cmpixelfmt as i32);
             let obj = obj.as_CFTypeRef() as *mut Object;
