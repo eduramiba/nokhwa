@@ -40,6 +40,8 @@
                 rustPlatform.bindgenHook
                 llvmPackages.libclang.lib
                 llvmPackages.clang
+                v4l-utils
+                libv4l
             ];
             LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
             shellHook = ''

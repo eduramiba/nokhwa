@@ -8,13 +8,13 @@ use v4l::frameinterval::FrameIntervalEnum;
 use v4l::prelude::MmapStream;
 use v4l::video::{Capture as V4lCapture, Output};
 use v4l::video::output::Parameters;
-use nokhwa_core::buffer::Buffer;
-use nokhwa_core::capture::{Capture, Open, Setting, Stream};
+use nokhwa_core::frame_buffer::FrameBuffer;
+use nokhwa_core::camera::{Camera, Open, Setting, Capture};
 use nokhwa_core::properties::{CameraProperties, CameraPropertyFlag, CameraPropertyId, CameraPropertyValue};
 use nokhwa_core::{define_back_and_fourth_control, define_back_and_fourth_frame_format};
 use nokhwa_core::error::{NokhwaError, NokhwaResult};
 use nokhwa_core::frame_format::FrameFormat;
-use nokhwa_core::types::{CameraFormat, CameraIndex, CameraInfo, FrameRate, Resolution};
+use nokhwa_core::types::{CameraFormat, CameraIndex, CameraInformation, FrameRate, Resolution};
 
 const NULL_FCC: &'static [u8; 4] = &[0x00, 0x00, 0x00, 0x00];
 

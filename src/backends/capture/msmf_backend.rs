@@ -15,18 +15,18 @@
  */
 use nokhwa_bindings_windows::wmf::MediaFoundationDevice;
 use nokhwa_core::{
-    buffer::Buffer,
+    frame_buffer::FrameBuffer,
     error::NokhwaError,
     pixel_format::RgbFormat,
     traits::CaptureTrait,
     types::{
         ApiBackend, CameraFormat, CameraIndex,
-        CameraInfo, FrameFormat, RequestedFormat,
+        CameraInformation, FrameFormat, RequestedFormat,
         RequestedFormatType, Resolution,
     },
 };
 use std::{borrow::Cow, collections::HashMap};
-use nokhwa_core::properties::{all_known_camera_controls, CameraControl, ControlValueSetter, KnownCameraControl};
+use nokhwa_core::properties::{all_known_camera_controls, CameraControl, ControlValue, KnownCameraControl};
 
 /// The backend that deals with Media Foundation on Windows.
 /// To see what this does, please see [`CaptureTrait`].
@@ -35,13 +35,13 @@ use nokhwa_core::properties::{all_known_camera_controls, CameraControl, ControlV
 /// # Quirks
 /// - This does build on non-windows platforms, however when you do the backend will be empty and will return an error for any given operation.
 /// - Please check [`nokhwa-bindings-windows`](https://github.com/l1npengtul/nokhwa/tree/senpai/nokhwa-bindings-windows) source code to see the internal raw interface.
-/// - The symbolic link for the device is listed in the `misc` attribute of the [`CameraInfo`].
+/// - The symbolic link for the device is listed in the `misc` attribute of the [`CameraInformation`].
 /// - The names may contain invalid characters since they were converted from UTF16.
 /// - When you call new or drop the struct, `initialize`/`de_initialize` will automatically be called.
 #[cfg_attr(feature = "docs-features", doc(cfg(feature = "input-msmf")))]
 pub struct MediaFoundationCaptureDevice {
     inner: MediaFoundationDevice,
-    info: CameraInfo,
+    info: CameraInformation,
 }
 
 impl MediaFoundationCaptureDevice {
@@ -51,7 +51,7 @@ impl MediaFoundationCaptureDevice {
     pub fn new(index: &CameraIndex, camera_fmt: RequestedFormat) -> Result<Self, NokhwaError> {
         let mut mf_device = MediaFoundationDevice::new(index.clone())?;
 
-        let info = CameraInfo::new(
+        let info = CameraInformation::new(
             &mf_device.name(),
             "MediaFoundation Camera Device",
             &mf_device.symlink(),
@@ -114,7 +114,7 @@ impl CaptureTrait for MediaFoundationCaptureDevice {
         ApiBackend::MediaFoundation
     }
 
-    fn camera_info(&self) -> &CameraInfo {
+    fn camera_info(&self) -> &CameraInformation {
         &self.info
     }
 
@@ -229,7 +229,7 @@ impl CaptureTrait for MediaFoundationCaptureDevice {
     fn set_camera_control(
         &mut self,
         id: KnownCameraControl,
-        value: ControlValueSetter,
+        value: ControlValue,
     ) -> Result<(), NokhwaError> {
         self.inner.set_control(id, value)
     }
@@ -242,10 +242,10 @@ impl CaptureTrait for MediaFoundationCaptureDevice {
         self.inner.is_stream_open()
     }
 
-    fn frame(&mut self) -> Result<Buffer, NokhwaError> {
+    fn frame(&mut self) -> Result<FrameBuffer, NokhwaError> {
         self.refresh_camera_format()?;
         let self_ctrl = self.camera_format();
-        Ok(Buffer::new(
+        Ok(FrameBuffer::new(
             self_ctrl.resolution(),
             &self.inner.raw_bytes()?,
             self_ctrl.format(),

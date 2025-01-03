@@ -31,7 +31,7 @@
 pub mod wmf {
     use nokhwa_core::error::NokhwaError;
     use nokhwa_core::types::{
-        ApiBackend, CameraFormat, CameraIndex, CameraInfo,
+        ApiBackend, CameraFormat, CameraIndex, CameraInformation,
         FrameFormat, KnownCameraControlFlag, Resolution,
     };
     use once_cell::sync::Lazy;
@@ -46,7 +46,7 @@ pub mod wmf {
             Arc,
         },
     };
-    use nokhwa_core::properties::{CameraControl, ControlValueDescription, ControlValueSetter, KnownCameraControl};
+    use nokhwa_core::properties::{CameraControl, ControlValueDescription, ControlValue, KnownCameraControl};
     use windows::Win32::Media::DirectShow::{CameraControl_Flags_Auto, CameraControl_Flags_Manual};
     use windows::Win32::Media::MediaFoundation::{
         IMFMediaType, MFCreateSample, MF_SOURCE_READER_FIRST_VIDEO_STREAM,
@@ -295,7 +295,7 @@ pub mod wmf {
     fn activate_to_descriptors(
         index: CameraIndex,
         imf_activate: &IMFActivate,
-    ) -> Result<CameraInfo, NokhwaError> {
+    ) -> Result<CameraInformation, NokhwaError> {
         let mut pwstr_name = PWSTR(&mut 0_u16);
         let mut len_pwstrname = 0;
         let mut pwstr_symlink = PWSTR(&mut 0_u16);
@@ -357,7 +357,7 @@ pub mod wmf {
                 })?
         };
 
-        Ok(CameraInfo::new(
+        Ok(CameraInformation::new(
             &name,
             "MediaFoundation Camera",
             &symlink,
@@ -365,7 +365,7 @@ pub mod wmf {
         ))
     }
 
-    pub fn query_media_foundation_descriptors() -> Result<Vec<CameraInfo>, NokhwaError> {
+    pub fn query_media_foundation_descriptors() -> Result<Vec<CameraInformation>, NokhwaError> {
         let mut device_list = vec![];
 
         for (index, activate_ptr) in query_activate_pointers()?.into_iter().enumerate() {
@@ -421,7 +421,7 @@ pub mod wmf {
 
     pub struct MediaFoundationDevice {
         is_open: Cell<bool>,
-        device_specifier: CameraInfo,
+        device_specifier: CameraInformation,
         device_format: CameraFormat,
         source_reader: IMFSourceReader,
     }
@@ -848,7 +848,7 @@ pub mod wmf {
         pub fn set_control(
             &mut self,
             control: KnownCameraControl,
-            value: ControlValueSetter,
+            value: ControlValue,
         ) -> Result<(), NokhwaError> {
             let current_value = self.control(control)?;
 
@@ -896,8 +896,8 @@ pub mod wmf {
             })?;
 
             let ctrl_value = match value {
-                ControlValueSetter::Integer(i) => i as i32,
-                ControlValueSetter::Boolean(b) => i32::from(b),
+                ControlValue::Integer(i) => i as i32,
+                ControlValue::Boolean(b) => i32::from(b),
                 v => {
                     return Err(NokhwaError::StructureError {
                         structure: format!("ControlValueSetter {}", v),
@@ -1225,10 +1225,10 @@ pub mod wmf {
 pub mod wmf {
     use nokhwa_core::error::NokhwaError;
     use nokhwa_core::types::{
-        CameraFormat, CameraIndex, CameraInfo,
+        CameraFormat, CameraIndex, CameraInformation,
     };
     use std::borrow::Cow;
-    use nokhwa_core::properties::{CameraControl, ControlValueSetter, KnownCameraControl};
+    use nokhwa_core::properties::{CameraControl, ControlValue, KnownCameraControl};
 
     pub fn initialize_mf() -> Result<(), NokhwaError> {
         Err(NokhwaError::NotImplementedError(
@@ -1242,7 +1242,7 @@ pub mod wmf {
         ))
     }
 
-    pub fn query_msmf() -> Result<Vec<CameraInfo>, NokhwaError> {
+    pub fn query_msmf() -> Result<Vec<CameraInformation>, NokhwaError> {
         Err(NokhwaError::NotImplementedError(
             "Not on windows".to_string(),
         ))
@@ -1286,7 +1286,7 @@ pub mod wmf {
         pub fn set_control(
             &mut self,
             _control: KnownCameraControl,
-            _value: ControlValueSetter,
+            _value: ControlValue,
         ) -> Result<(), NokhwaError> {
             Err(NokhwaError::NotImplementedError(
                 "Only on Windows".to_string(),

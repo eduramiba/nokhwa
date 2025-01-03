@@ -21,12 +21,12 @@ use nokhwa_bindings_macos::{
     AVCaptureVideoDataOutput,
 };
 use nokhwa_core::{
-    buffer::Buffer,
+    frame_buffer::FrameBuffer,
     error::NokhwaError,
     pixel_format::RgbFormat,
     traits::CaptureTrait,
     types::{
-        ApiBackend, CameraFormat, CameraIndex, CameraInfo,
+        ApiBackend, CameraFormat, CameraIndex, CameraInformation,
         FrameFormat, RequestedFormat, RequestedFormatType, Resolution,
     },
 };
@@ -34,7 +34,7 @@ use nokhwa_core::{
 use std::{ffi::CString, sync::Arc};
 
 use std::{borrow::Cow, collections::HashMap};
-use nokhwa_core::properties::{CameraControl, ControlValueSetter, KnownCameraControl};
+use nokhwa_core::properties::{CameraControl, ControlValue, KnownCameraControl};
 
 /// The backend struct that interfaces with V4L2.
 /// To see what this does, please see [`CaptureTrait`].
@@ -52,7 +52,7 @@ pub struct AVFoundationCaptureDevice {
     session: Option<AVCaptureSession>,
     data_out: Option<AVCaptureVideoDataOutput>,
     data_collect: Option<AVCaptureVideoCallback>,
-    info: CameraInfo,
+    info: CameraInformation,
     buffer_name: CString,
     format: CameraFormat,
     frame_buffer_receiver: Arc<Receiver<(Vec<u8>, FrameFormat)>>,
@@ -127,7 +127,7 @@ impl CaptureTrait for AVFoundationCaptureDevice {
         ApiBackend::AVFoundation
     }
 
-    fn camera_info(&self) -> &CameraInfo {
+    fn camera_info(&self) -> &CameraInformation {
         &self.info
     }
 
@@ -231,7 +231,7 @@ impl CaptureTrait for AVFoundationCaptureDevice {
     fn set_camera_control(
         &mut self,
         id: KnownCameraControl,
-        value: ControlValueSetter,
+        value: ControlValue,
     ) -> Result<(), NokhwaError> {
         self.device.lock()?;
         let res = self.device.set_control(id, value);
@@ -278,11 +278,11 @@ impl CaptureTrait for AVFoundationCaptureDevice {
         }
     }
 
-    fn frame(&mut self) -> Result<Buffer, NokhwaError> {
+    fn frame(&mut self) -> Result<FrameBuffer, NokhwaError> {
         self.refresh_camera_format()?;
         let cfmt = self.camera_format();
         let b = self.frame_raw()?;
-        let buffer = Buffer::new(cfmt.resolution(), b.as_ref(), cfmt.format());
+        let buffer = FrameBuffer::new(cfmt.resolution(), b.as_ref(), cfmt.format());
         let _ = self.frame_buffer_receiver.drain();
         Ok(buffer)
     }
@@ -401,7 +401,7 @@ impl CaptureTrait for AVFoundationCaptureDevice {
         todo!()
     }
 
-    fn camera_info(&self) -> &CameraInfo {
+    fn camera_info(&self) -> &CameraInformation {
         todo!()
     }
 
@@ -463,7 +463,7 @@ impl CaptureTrait for AVFoundationCaptureDevice {
     fn set_camera_control(
         &mut self,
         _: KnownCameraControl,
-        _: ControlValueSetter,
+        _: ControlValue,
     ) -> Result<(), NokhwaError> {
         todo!()
     }
@@ -476,7 +476,7 @@ impl CaptureTrait for AVFoundationCaptureDevice {
         todo!()
     }
 
-    fn frame(&mut self) -> Result<Buffer, NokhwaError> {
+    fn frame(&mut self) -> Result<FrameBuffer, NokhwaError> {
         todo!()
     }
 

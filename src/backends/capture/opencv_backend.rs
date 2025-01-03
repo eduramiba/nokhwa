@@ -16,11 +16,11 @@
 
 use nokhwa_core::types::RequestedFormatType;
 use nokhwa_core::{
-    buffer::Buffer,
+    frame_buffer::FrameBuffer,
     error::NokhwaError,
     traits::CaptureTrait,
     types::{
-        ApiBackend, CameraFormat, CameraIndex, CameraInfo,
+        ApiBackend, CameraFormat, CameraIndex, CameraInformation,
         FrameFormat, RequestedFormat, Resolution,
     },
 };
@@ -33,7 +33,7 @@ use opencv::{
     },
 };
 use std::{borrow::Cow, collections::HashMap};
-use nokhwa_core::properties::{CameraControl, ControlValueDescription, ControlValueSetter, KnownCameraControl};
+use nokhwa_core::properties::{CameraControl, ControlValueDescription, ControlValue, KnownCameraControl};
 
 /// Attempts to convert a [`KnownCameraControl`] into a `OpenCV` video capture property.
 /// If the associated control is not found, this will return `Err`
@@ -71,14 +71,14 @@ pub fn known_camera_control_to_video_capture_property(
 ///  - If the [`OpenCvCaptureDevice`] is initialized as a `IPCamera`, the [`CameraFormat`]'s `index` value will be [`u32::MAX`](std::u32::MAX) (4294967295).
 ///  - `OpenCV` does not support camera querying. Camera Name and Camera supported resolution/fps/fourcc is a [`UnsupportedOperationError`](NokhwaError::UnsupportedOperationError).
 /// Note: [`resolution()`](crate::camera_traits::CaptureTrait::resolution()), [`frame_format()`](crate::camera_traits::CaptureTrait::frame_format()), and [`frame_rate()`](crate::camera_traits::CaptureTrait::frame_rate()) is not affected.
-///  - [`CameraInfo`]'s human name will be "`OpenCV` Capture Device {location}"
-///  - [`CameraInfo`]'s description will contain the Camera's Index or IP.
+///  - [`CameraInformation`]'s human name will be "`OpenCV` Capture Device {location}"
+///  - [`CameraInformation`]'s description will contain the Camera's Index or IP.
 ///  - The API Preference order is the native OS API (linux => `v4l2`, mac => `AVFoundation`, windows => `MSMF`) than [`CAP_AUTO`](https://docs.opencv.org/4.5.2/d4/d15/group__videoio__flags__base.html#gga023786be1ee68a9105bf2e48c700294da77ab1fe260fd182f8ec7655fab27a31d)
 #[cfg_attr(feature = "docs-features", doc(cfg(feature = "input-opencv")))]
 pub struct OpenCvCaptureDevice {
     camera_format: CameraFormat,
     camera_location: CameraIndex,
-    camera_info: CameraInfo,
+    camera_info: CameraInformation,
     api_preference: i32,
     video_capture: VideoCapture,
 }
@@ -124,7 +124,7 @@ impl OpenCvCaptureDevice {
 
         set_properties(&mut video_capture, camera_format)?;
 
-        let camera_info = CameraInfo::new(
+        let camera_info = CameraInformation::new(
             format!("OpenCV Capture Device {index}").as_str(),
             index.to_string().as_str(),
             "",
@@ -289,7 +289,7 @@ impl CaptureTrait for OpenCvCaptureDevice {
         ApiBackend::OpenCv
     }
 
-    fn camera_info(&self) -> &CameraInfo {
+    fn camera_info(&self) -> &CameraInformation {
         &self.camera_info
     }
 
@@ -434,12 +434,12 @@ impl CaptureTrait for OpenCvCaptureDevice {
     fn set_camera_control(
         &mut self,
         id: KnownCameraControl,
-        value: ControlValueSetter,
+        value: ControlValue,
     ) -> Result<(), NokhwaError> {
         let control_val = match value {
-            ControlValueSetter::Integer(i) => i as f64,
-            ControlValueSetter::Float(f) => f,
-            ControlValueSetter::Boolean(b) => u8::from(b) as f64,
+            ControlValue::Integer(i) => i as f64,
+            ControlValue::Float(f) => f,
+            ControlValue::Boolean(b) => u8::from(b) as f64,
             val => {
                 return Err(NokhwaError::SetPropertyError {
                     property: "Camera Control".to_string(),
@@ -525,7 +525,7 @@ impl CaptureTrait for OpenCvCaptureDevice {
         self.video_capture.is_opened().unwrap_or(false)
     }
 
-    fn frame(&mut self) -> Result<Buffer, NokhwaError> {
+    fn frame(&mut self) -> Result<FrameBuffer, NokhwaError> {
         let camera_resolution = self.camera_format.resolution();
         let image_data = {
             let mut data = self.frame_raw()?.to_vec();
@@ -535,7 +535,7 @@ impl CaptureTrait for OpenCvCaptureDevice {
             );
             data
         };
-        Ok(Buffer::new(
+        Ok(FrameBuffer::new(
             camera_resolution,
             &image_data,
             self.camera_format.format(),

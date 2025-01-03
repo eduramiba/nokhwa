@@ -18,17 +18,17 @@ use nokhwa_core::format_request::FormatFilter;
 use nokhwa_core::frame_format::SourceFrameFormat;
 use nokhwa_core::traits::Backend;
 use nokhwa_core::{
-    buffer::Buffer,
+    frame_buffer::FrameBuffer,
     error::NokhwaError,
     pixel_format::FormatDecoder,
     traits::CaptureTrait,
     types::{
-        ApiBackend, CameraFormat, CameraIndex, CameraInfo
+        ApiBackend, CameraFormat, CameraIndex, CameraInformation
         , RequestedFormatType, Resolution,
     },
 };
 use std::{borrow::Cow, collections::HashMap};
-use nokhwa_core::properties::{CameraControl, ControlValueSetter, KnownCameraControl};
+use nokhwa_core::properties::{CameraControl, ControlValue, KnownCameraControl};
 
 /// The main `Camera` struct. This is the struct that abstracts over all the backends, providing a simplified interface for use.
 pub struct Camera {
@@ -58,7 +58,7 @@ impl CaptureTrait for Camera {
         todo!()
     }
 
-    fn camera_info(&self) -> &CameraInfo {
+    fn camera_info(&self) -> &CameraInformation {
         todo!()
     }
 
@@ -123,7 +123,7 @@ impl CaptureTrait for Camera {
     fn set_camera_control(
         &mut self,
         id: KnownCameraControl,
-        value: ControlValueSetter,
+        value: ControlValue,
     ) -> Result<(), NokhwaError> {
         todo!()
     }
@@ -136,7 +136,7 @@ impl CaptureTrait for Camera {
         todo!()
     }
 
-    fn frame(&mut self) -> Result<Buffer, NokhwaError> {
+    fn frame(&mut self) -> Result<FrameBuffer, NokhwaError> {
         todo!()
     }
 
