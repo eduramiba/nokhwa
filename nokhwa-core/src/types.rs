@@ -299,6 +299,7 @@ pub enum FrameFormat {
     NV12,
     GRAY,
     RAWRGB,
+    RAWBGR,
 }
 
 impl Display for FrameFormat {
@@ -316,6 +317,9 @@ impl Display for FrameFormat {
             FrameFormat::RAWRGB => {
                 write!(f, "RAWRGB")
             }
+            FrameFormat::RAWBGR => {
+                write!(f, "RAWBGR")
+            }
             FrameFormat::NV12 => {
                 write!(f, "NV12")
             }
@@ -331,6 +335,7 @@ impl FromStr for FrameFormat {
             "YUYV" => Ok(FrameFormat::YUYV),
             "GRAY" => Ok(FrameFormat::GRAY),
             "RAWRGB" => Ok(FrameFormat::RAWRGB),
+            "RAWBGR" => Ok(FrameFormat::RAWBGR),
             "NV12" => Ok(FrameFormat::NV12),
             _ => Err(NokhwaError::StructureError {
                 structure: "FrameFormat".to_string(),
@@ -349,6 +354,7 @@ pub const fn frame_formats() -> &'static [FrameFormat] {
         FrameFormat::NV12,
         FrameFormat::GRAY,
         FrameFormat::RAWRGB,
+        FrameFormat::RAWBGR,
     ]
 }
 
@@ -360,6 +366,7 @@ pub const fn color_frame_formats() -> &'static [FrameFormat] {
         FrameFormat::YUYV,
         FrameFormat::NV12,
         FrameFormat::RAWRGB,
+        FrameFormat::RAWBGR,
     ]
 }
 
@@ -1808,6 +1815,58 @@ pub fn buf_nv12_to_rgb(
                 out[base_index + 5] = px1[2];
             }
         }
+    }
+
+    Ok(())
+}
+
+#[allow(clippy::similar_names)]
+#[inline]
+pub fn buf_bgr_to_rgb(
+    resolution: Resolution,
+    data: &[u8],
+    out: &mut [u8],
+) -> Result<(), NokhwaError> {
+    let width = resolution.width();
+    let height = resolution.height();
+
+    if width % 2 != 0 || height % 2 != 0 {
+        return Err(NokhwaError::ProcessFrameError {
+            src: FrameFormat::RAWBGR,
+            destination: "RGB".to_string(),
+            error: "bad resolution".to_string(),
+        });
+    }
+
+    let input_size = (width * height * 3) as usize; // BGR is 3 bytes per pixel
+    let output_size = (width * height * 3) as usize; // RGB is 3 bytes per pixel
+
+    if data.len() != input_size {
+        return Err(NokhwaError::ProcessFrameError {
+            src: FrameFormat::RAWBGR,
+            destination: "RGB".to_string(),
+            error: "bad input buffer size".to_string(),
+        });
+    }
+
+    if out.len() != output_size {
+        return Err(NokhwaError::ProcessFrameError {
+            src: FrameFormat::RAWBGR,
+            destination: "RGB".to_string(),
+            error: "bad output buffer size".to_string(),
+        });
+    }
+
+    for (idx, chunk) in data.chunks_exact(3).enumerate() {
+        // BGR Format: [Blue, Green, Red]
+        let b = chunk[0];
+        let g = chunk[1];
+        let r = chunk[2];
+
+        let out_idx = idx * 3; // 3 bytes per pixel in RGB
+        out[out_idx] = r; // Red
+        out[out_idx + 1] = g; // Green
+        out[out_idx + 2] = b; // Blue
     }
 
     Ok(())

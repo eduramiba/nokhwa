@@ -173,7 +173,7 @@ CaptureBackendTrait {
         let cfmt = self.camera_format();
         let resolution = cfmt.resolution();
         let pxwidth = match cfmt.format() {
-            FrameFormat::MJPEG | FrameFormat::YUYV | FrameFormat::RAWRGB | FrameFormat::NV12 => 3,
+            FrameFormat::MJPEG | FrameFormat::YUYV | FrameFormat::RAWRGB | FrameFormat::RAWBGR | FrameFormat::NV12 => 3,
             FrameFormat::GRAY => 1,
         };
         if alpha {

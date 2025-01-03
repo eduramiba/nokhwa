@@ -15,7 +15,7 @@
  */
 use crate::error::NokhwaError;
 use crate::types::{
-    buf_mjpeg_to_rgb, buf_nv12_to_rgb, buf_yuyv422_to_rgb, color_frame_formats, frame_formats,
+    buf_bgr_to_rgb, buf_mjpeg_to_rgb, buf_nv12_to_rgb, buf_yuyv422_to_rgb, color_frame_formats, frame_formats,
     mjpeg_to_rgb, nv12_to_rgb, yuyv422_to_rgb, FrameFormat, Resolution,
 };
 use image::{Luma, LumaA, Pixel, Rgb, Rgba};
@@ -76,6 +76,16 @@ impl FormatDecoder for RgbFormat {
                 })
                 .collect()),
             FrameFormat::RAWRGB => Ok(data.to_vec()),
+            FrameFormat::RAWBGR => {
+                let mut rgb = vec![0u8; data.len()];
+                data.chunks_exact(3).enumerate().for_each(|(idx, px)| {
+                    let index = idx * 3;
+                    rgb[index] = px[2];
+                    rgb[index + 1] = px[1];
+                    rgb[index + 2] = px[0];
+                });
+                Ok(rgb)
+            },
             FrameFormat::NV12 => nv12_to_rgb(resolution, data, false),
         }
     }
@@ -111,6 +121,7 @@ impl FormatDecoder for RgbFormat {
                 dest.copy_from_slice(data);
                 Ok(())
             }
+            FrameFormat::RAWBGR => buf_bgr_to_rgb(resolution, data, dest),
             FrameFormat::NV12 => buf_nv12_to_rgb(resolution, data, dest, false),
         }
     }
@@ -149,6 +160,10 @@ impl FormatDecoder for RgbAFormat {
             FrameFormat::RAWRGB => Ok(data
                 .chunks_exact(3)
                 .flat_map(|x| [x[0], x[1], x[2], 255])
+                .collect()),
+            FrameFormat::RAWBGR => Ok(data
+                .chunks_exact(3)
+                .flat_map(|x| [x[2], x[1], x[0], 255])
                 .collect()),
             FrameFormat::NV12 => nv12_to_rgb(resolution, data, true),
         }
@@ -189,6 +204,16 @@ impl FormatDecoder for RgbAFormat {
                     dest[index] = px[0];
                     dest[index + 1] = px[1];
                     dest[index + 2] = px[2];
+                    dest[index + 3] = 255;
+                });
+                Ok(())
+            }
+            FrameFormat::RAWBGR => {
+                data.chunks_exact(3).enumerate().for_each(|(idx, px)| {
+                    let index = idx * 4;
+                    dest[index] = px[2];
+                    dest[index + 1] = px[1];
+                    dest[index + 2] = px[0];
                     dest[index + 3] = 255;
                 });
                 Ok(())
@@ -253,6 +278,10 @@ impl FormatDecoder for LumaFormat {
                 .chunks(3)
                 .map(|px| ((i32::from(px[0]) + i32::from(px[1]) + i32::from(px[2])) / 3) as u8)
                 .collect()),
+            FrameFormat::RAWBGR => Ok(data
+                .chunks(3)
+                .map(|px| ((i32::from(px[2]) + i32::from(px[1]) + i32::from(px[0])) / 3) as u8)
+                .collect()),
         }
     }
 
@@ -268,11 +297,10 @@ impl FormatDecoder for LumaFormat {
             FrameFormat::MJPEG | FrameFormat::YUYV | FrameFormat::NV12 => {
                 Err(NokhwaError::ProcessFrameError {
                     src: fcc,
-                    destination: "Luma => RGB".to_string(),
+                    destination: "RGB => Luma".to_string(),
                     error: "Conversion Error".to_string(),
                 })
             }
-
             FrameFormat::GRAY => {
                 data.iter().zip(dest.iter_mut()).for_each(|(pxv, d)| {
                     *d = *pxv;
@@ -281,7 +309,12 @@ impl FormatDecoder for LumaFormat {
             }
             FrameFormat::RAWRGB => Err(NokhwaError::ProcessFrameError {
                 src: fcc,
-                destination: "RGB => RGB".to_string(),
+                destination: "RGB => Luma".to_string(),
+                error: "Conversion Error".to_string(),
+            }),
+            FrameFormat::RAWBGR => Err(NokhwaError::ProcessFrameError {
+                src: fcc,
+                destination: "BGR => Luma".to_string(),
                 error: "Conversion Error".to_string(),
             }),
         }
@@ -340,7 +373,12 @@ impl FormatDecoder for LumaAFormat {
             FrameFormat::GRAY => Ok(data.iter().flat_map(|x| [*x, 255]).collect()),
             FrameFormat::RAWRGB => Err(NokhwaError::ProcessFrameError {
                 src: fcc,
-                destination: "RGB => RGB".to_string(),
+                destination: "RGB => LumaA".to_string(),
+                error: "Conversion Error".to_string(),
+            }),
+            FrameFormat::RAWBGR => Err(NokhwaError::ProcessFrameError {
+                src: fcc,
+                destination: "BGR => LumaA".to_string(),
                 error: "Conversion Error".to_string(),
             }),
         }
@@ -393,7 +431,12 @@ impl FormatDecoder for LumaAFormat {
             }
             FrameFormat::RAWRGB => Err(NokhwaError::ProcessFrameError {
                 src: fcc,
-                destination: "RGB => RGB".to_string(),
+                destination: "RGB => LumaA".to_string(),
+                error: "Conversion Error".to_string(),
+            }),
+            FrameFormat::RAWBGR => Err(NokhwaError::ProcessFrameError {
+                src: fcc,
+                destination: "BGR => LumaA".to_string(),
                 error: "Conversion Error".to_string(),
             }),
         }
